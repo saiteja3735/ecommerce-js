@@ -1,154 +1,112 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>View Orders - Admin</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <link rel="stylesheet" href="style.css">
-  <style>
-    .filter-box {
-      margin-bottom: 20px;
-    }
-    .filter-box select,
-    .filter-box input {
-      padding: 6px 10px;
-      margin-right: 10px;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h2>All Orders</h2>
-    <p id="access" style="color: red;"></p>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    <div class="filter-box">
-      <label><strong>Filter:</strong></label>
-      <select id="filter-type">
-        <option value="all">All Orders</option>
-        <option value="today">Today</option>
-        <option value="yesterday">Yesterday</option>
-        <option value="last7">Last 7 Days</option>
-        <option value="last30">Last 30 Days</option>
-        <option value="range">Select Date Range</option>
-      </select>
-      <input type="date" id="from-date" style="display: none;">
-      <input type="date" id="to-date" style="display: none;">
-      <button onclick="loadOrders()">Apply</button>
-    </div>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDaThueFE1Z0nXK_FL3H3gWs-roE8RfxV0",
+    authDomain: "ecommercest-f71db.firebaseapp.com",
+    projectId: "ecommercest-f71db",
+    storageBucket: "ecommercest-f71db.firebasestorage.app",
+    messagingSenderId: "1053281704673",
+    appId: "1:1053281704673:web:b59b1b83c1e3a850cab5a0"
+  };
 
-    <div id="orders-list"></div>
-  </div>
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  const access = document.getElementById("access");
+  const ordersList = document.getElementById("orders-list");
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDaThueFE1Z0nXK_FL3H3gWs-roE8RfxV0",
-      authDomain: "ecommercest-f71db.firebaseapp.com",
-      projectId: "ecommercest-f71db",
-      storageBucket: "ecommercest-f71db.firebasestorage.app",
-      messagingSenderId: "1053281704673",
-      appId: "1:1053281704673:web:b59b1b83c1e3a850cab5a0"
-    };
+  let allOrders = [];
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+  function getStartOfDay(date) {
+    return new Date(date.setHours(0, 0, 0, 0));
+  }
 
-    const access = document.getElementById("access");
-    const ordersList = document.getElementById("orders-list");
+  function getEndOfDay(date) {
+    return new Date(date.setHours(23, 59, 59, 999));
+  }
 
-    let allOrders = [];
+  function filterOrders(orders, type, from = null, to = null) {
+    const now = new Date();
+    const today = getStartOfDay(new Date());
+    const yesterday = getStartOfDay(new Date(Date.now() - 86400000));
+    const weekAgo = new Date(Date.now() - 7 * 86400000);
+    const monthAgo = new Date(Date.now() - 30 * 86400000);
 
-    function getStartOfDay(date) {
-      return new Date(date.setHours(0, 0, 0, 0));
-    }
+    return orders.filter(order => {
+      if (!order.createdAt || !order.createdAt.seconds) return false;
 
-    function getEndOfDay(date) {
-      return new Date(date.setHours(23, 59, 59, 999));
-    }
+      const orderDate = new Date(order.createdAt.seconds * 1000);
 
-    function filterOrders(orders, type, from = null, to = null) {
-      const now = new Date();
-      const today = getStartOfDay(new Date());
-      const yesterday = getStartOfDay(new Date(Date.now() - 86400000));
-      const weekAgo = new Date(Date.now() - 7 * 86400000);
-      const monthAgo = new Date(Date.now() - 30 * 86400000);
-
-      return orders.filter(order => {
-        const orderDate = new Date(order.createdAt.seconds * 1000);
-
-        if (type === "today") {
-          return orderDate >= today;
-        } else if (type === "yesterday") {
-          return orderDate >= yesterday && orderDate < today;
-        } else if (type === "last7") {
-          return orderDate >= weekAgo;
-        } else if (type === "last30") {
-          return orderDate >= monthAgo;
-        } else if (type === "range" && from && to) {
-          return orderDate >= new Date(from) && orderDate <= getEndOfDay(new Date(to));
-        } else {
-          return true;
-        }
-      });
-    }
-
-    function displayOrders(orders) {
-      ordersList.innerHTML = "";
-      if (orders.length === 0) {
-        ordersList.innerHTML = "<p>No orders found for the selected range.</p>";
-        return;
+      if (type === "today") return orderDate >= today;
+      if (type === "yesterday") return orderDate >= yesterday && orderDate < today;
+      if (type === "last7") return orderDate >= weekAgo;
+      if (type === "last30") return orderDate >= monthAgo;
+      if (type === "range" && from && to) {
+        return orderDate >= new Date(from) && orderDate <= getEndOfDay(new Date(to));
       }
-
-      orders.forEach(order => {
-        const items = order.items.map(item => `<li>${item.name} - ₹${item.price}</li>`).join("");
-        ordersList.innerHTML += `
-          <div class="order">
-            <strong>User:</strong> ${order.user}<br>
-            <strong>Total:</strong> ₹${order.total}<br>
-            <strong>Date:</strong> ${new Date(order.createdAt.seconds * 1000).toLocaleString()}<br>
-            <strong>Items:</strong>
-            <ul>${items}</ul>
-          </div>
-        `;
-      });
-    }
-
-    async function loadOrders() {
-      const filter = document.getElementById("filter-type").value;
-      const from = document.getElementById("from-date").value;
-      const to = document.getElementById("to-date").value;
-      const filtered = filterOrders(allOrders, filter, from, to);
-      displayOrders(filtered);
-    }
-
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        access.textContent = "❌ You are not logged in.";
-        return;
-      }
-
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      if (!userDoc.exists() || userDoc.data().role !== "admin") {
-        access.textContent = "❌ Access denied. You are not an admin.";
-        return;
-      }
-
-      const snapshot = await getDocs(collection(db, "orders"));
-      allOrders = snapshot.docs.map(doc => doc.data());
-      loadOrders();
+      return true;
     });
+  }
 
-    document.getElementById("filter-type").addEventListener("change", () => {
-      const showRange = document.getElementById("filter-type").value === "range";
-      document.getElementById("from-date").style.display = showRange ? "inline-block" : "none";
-      document.getElementById("to-date").style.display = showRange ? "inline-block" : "none";
+  function displayOrders(orders) {
+    ordersList.innerHTML = "";
+    if (orders.length === 0) {
+      ordersList.innerHTML = "<p>No orders found for the selected filter.</p>";
+      return;
+    }
+
+    orders.forEach(order => {
+      const dateStr = order.createdAt?.seconds
+        ? new Date(order.createdAt.seconds * 1000).toLocaleString()
+        : "Unknown";
+
+      const items = order.items.map(item => `<li>${item.name} - ₹${item.price}</li>`).join("");
+
+      ordersList.innerHTML += `
+        <div class="order">
+          <strong>User:</strong> ${order.user}<br>
+          <strong>Total:</strong> ₹${order.total}<br>
+          <strong>Date:</strong> ${dateStr}<br>
+          <strong>Items:</strong>
+          <ul>${items}</ul>
+        </div>
+      `;
     });
-  </script>
-</body>
-</html>
+  }
+
+  async function loadOrders() {
+    const filter = document.getElementById("filter-type").value;
+    const from = document.getElementById("from-date").value;
+    const to = document.getElementById("to-date").value;
+
+    const filtered = filterOrders(allOrders, filter, from, to);
+    displayOrders(filtered);
+  }
+
+  onAuthStateChanged(auth, async (user) => {
+    if (!user) {
+      access.textContent = "❌ You are not logged in.";
+      return;
+    }
+
+    const userDoc = await getDoc(doc(db, "users", user.uid));
+    if (!userDoc.exists() || userDoc.data().role !== "admin") {
+      access.textContent = "❌ Access denied. You are not an admin.";
+      return;
+    }
+
+    const snapshot = await getDocs(collection(db, "orders"));
+    allOrders = snapshot.docs.map(doc => doc.data());
+    loadOrders();
+  });
+
+  document.getElementById("filter-type").addEventListener("change", () => {
+    const showRange = document.getElementById("filter-type").value === "range";
+    document.getElementById("from-date").style.display = showRange ? "inline-block" : "none";
+    document.getElementById("to-date").style.display = showRange ? "inline-block" : "none";
+  });
+</script>
