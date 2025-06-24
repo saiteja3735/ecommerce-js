@@ -189,6 +189,13 @@
     }
 
     loadProducts();
+
+    // 🔁 Update cart count if cart is cleared from another page (like cart.html)
+    window.addEventListener("storage", (event) => {
+      if (event.key === "cart") {
+        updateCartCount();
+      }
+    });
   </script>
 </body>
 </html>
