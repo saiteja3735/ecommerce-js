@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel - Saiteja's Store</title>
+</head>
+<body>
+  <h2>Admin Panel: Add Product</h2>
+  <form id="product-form">
+    <input type="text" id="name" placeholder="Product Name" required><br>
+    <input type="number" id="price" placeholder="Price" required><br>
+    <textarea id="desc" placeholder="Description" required></textarea><br>
+    <input type="text" id="image" placeholder="Image URL" required><br>
+    <button type="submit">Add Product</button>
+  </form>
+  <p id="status"></p>
+  <p id="access" style="color: red;"></p>
+
+  <!-- Firebase SDKs -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDaThueFE1Z0nXK_FL3H3gWs-roE8RfxV0",
+      authDomain: "ecommercest-f71db.firebaseapp.com",
+      projectId: "ecommercest-f71db",
+      storageBucket: "ecommercest-f71db.firebasestorage.app",
+      messagingSenderId: "1053281704673",
+      appId: "1:1053281704673:web:b59b1b83c1e3a850cab5a0"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const form = document.getElementById("product-form");
+    const status = document.getElementById("status");
+    const access = document.getElementById("access");
+
+    // 🔒 Check admin access on page load
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        access.textContent = "❌ You are not logged in.";
+        form.style.display = "none";
+        return;
+      }
+
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      const data = userDoc.data();
+
+      if (!data || data.role !== "admin") {
+        access.textContent = "❌ Access denied. You are not an admin.";
+        form.style.display = "none";
+      } else {
+        access.textContent = ""; // clear message
+        form.style.display = "block";
+      }
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("name").value;
+      const price = parseInt(document.getElementById("price").value);
+      const desc = document.getElementById("desc").value;
+      const image = document.getElementById("image").value;
+
+      try {
+        await addDoc(collection(db, "products"), {
+          name,
+          price,
+          desc,
+          image,
+          createdAt: serverTimestamp()
+        });
+
+        status.style.color = "green";
+        status.textContent = "✅ Product added!";
+        form.reset();
+      } catch (err) {
+        status.style.color = "red";
+        status.textContent = "❌ " + err.message;
+      }
+    });
+  </script>
+</body>
+</html>
