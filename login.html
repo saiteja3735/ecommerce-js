@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Login - Saiteja's Store</title>
 </head>
 <body>
@@ -16,11 +15,11 @@
   <p id="login-status" style="color: red;"></p>
   <p>Don't have an account? <a href="register.html">Register</a></p>
 
-  <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
-  <script>
-    // Firebase config
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
     const firebaseConfig = {
       apiKey: "AIzaSyDaThueFE1Z0nXK_FL3H3gWs-roE8RfxV0",
       authDomain: "ecommercest-f71db.firebaseapp.com",
@@ -30,29 +29,28 @@
       appId: "1:1053281704673:web:b59b1b83c1e3a850cab5a0"
     };
 
-    // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
 
-    // Handle login
-    document.getElementById("login-form").addEventListener("submit", function (e) {
+    document.getElementById("login-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
+      const status = document.getElementById("login-status");
 
-      auth.signInWithEmailAndPassword(email, password)
-        .then(userCredential => {
-          // ✅ Success: Redirect
-          document.getElementById("login-status").style.color = "green";
-          document.getElementById("login-status").textContent = "Login successful!";
-          setTimeout(() => {
-            window.location.href = "products.html";
-          }, 1000);
-        })
-        .catch(error => {
-          // ❌ Failure: Show error
-          document.getElementById("login-status").textContent = error.message;
-        });
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        status.style.color = "green";
+        status.textContent = "✅ Login successful!";
+        
+        // ✅ Redirect after a short delay
+        setTimeout(() => {
+          window.location.href = "products.html";
+        }, 1000);
+      } catch (err) {
+        status.style.color = "red";
+        status.textContent = "❌ " + err.message;
+      }
     });
   </script>
 </body>
