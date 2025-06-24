@@ -4,109 +4,148 @@
   <meta charset="UTF-8" />
   <title>Cart - Saiteja's Store</title>
   <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    h2 {
+      margin-top: 20px;
+      text-align: center;
+    }
+    .cart-container {
+      max-width: 600px;
+      margin: auto;
+      padding: 20px;
+    }
     .item {
       display: flex;
       justify-content: space-between;
-      padding: 8px 0;
-      border-bottom: 1px solid #ddd;
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
     }
     .remove-btn {
-      background: transparent;
-      color: red;
+      background: red;
+      color: white;
       border: none;
+      padding: 4px 10px;
+      border-radius: 4px;
       cursor: pointer;
     }
-    #empty { font-style: italic; }
+    .remove-btn:hover {
+      background: darkred;
+    }
+    #status {
+      text-align: center;
+      color: green;
+      margin-top: 15px;
+    }
   </style>
 </head>
 <body>
   <h2>Your Cart</h2>
-  <div id="cart-items"></div>
-  <p id="empty"></p>
-  <p><strong>Total: ₹<span id="total">0</span></strong></p>
-  <button id="checkout-btn">Checkout</button>
-  <p id="status"></p>
+  <div class="cart-container">
+    <div id="cart-items"></div>
+    <p><strong>Total:</strong> ₹<span id="total">0</span></p>
+    <button id="checkout-btn">Checkout</button>
+    <p id="status"></p>
+  </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    const firebaseConfig = { /* your config */ };
+    const firebaseConfig = {
+      apiKey: "AIzaSyDaThueFE1Z0nXK_FL3H3gWs-roE8RfxV0",
+      authDomain: "ecommercest-f71db.firebaseapp.com",
+      projectId: "ecommercest-f71db",
+      storageBucket: "ecommercest-f71db.firebasestorage.app",
+      messagingSenderId: "1053281704673",
+      appId: "1:1053281704673:web:b59b1b83c1e3a850cab5a0"
+    };
+
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    const itemsDiv = document.getElementById("cart-items");
-    const emptyMsg = document.getElementById("empty");
+    const cartItemsEl = document.getElementById("cart-items");
     const totalEl = document.getElementById("total");
     const status = document.getElementById("status");
     const checkoutBtn = document.getElementById("checkout-btn");
 
-    let cart = JSON.parse(localStorage.getItem("cart")) || [];
-    let user;
+    let cart = [];
+    let currentUser = null;
 
-    function render() {
-      itemsDiv.innerHTML = "";
+    function loadCart() {
+      cart = JSON.parse(localStorage.getItem("cart")) || [];
+      cartItemsEl.innerHTML = "";
+      let total = 0;
+
       if (cart.length === 0) {
-        emptyMsg.textContent = "Your cart is empty.";
+        cartItemsEl.innerHTML = "<p>Your cart is empty.</p>";
         checkoutBtn.disabled = true;
         totalEl.textContent = 0;
         return;
       }
-      emptyMsg.textContent = "";
+
       checkoutBtn.disabled = false;
-      let total = 0;
-      cart.forEach((p,i) => {
-        total += p.price;
-        itemsDiv.innerHTML += `
-          <div class="item">
-            <span>${p.name} - ₹${p.price}</span> 
-            <button class="remove-btn" onclick="remove(${i})">✖️</button>
-          </div>`;
+
+      cart.forEach((item, index) => {
+        total += item.price;
+        const itemEl = document.createElement("div");
+        itemEl.className = "item";
+        itemEl.innerHTML = `
+          <span>${item.name} - ₹${item.price}</span>
+          <button class="remove-btn" onclick="removeItem(${index})">Remove</button>
+        `;
+        cartItemsEl.appendChild(itemEl);
       });
+
       totalEl.textContent = total;
     }
 
-    window.remove = i => {
-      cart.splice(i, 1);
+    window.removeItem = (index) => {
+      cart.splice(index, 1);
       localStorage.setItem("cart", JSON.stringify(cart));
-      render();
+      loadCart();
     };
 
-    onAuthStateChanged(auth, u => {
-      if (!u) {
-        status.textContent = "🔒 Please log in to checkout.";
-        checkoutBtn.disabled = true;
-      } else {
-        user = u;
-        status.textContent = "";
-        render();
-      }
-    });
+    checkoutBtn.addEventListener("click", async () => {
+      if (!currentUser || cart.length === 0) return;
 
-    checkoutBtn.onclick = async () => {
-      if (!user || cart.length === 0) return;
-      const total = cart.reduce((sum, p) => sum + p.price,0);
+      const total = cart.reduce((sum, item) => sum + item.price, 0);
+
       try {
         await addDoc(collection(db, "orders"), {
-          user: user.email,
+          user: currentUser.email,
           items: cart,
           total,
           createdAt: serverTimestamp()
         });
+
         localStorage.removeItem("cart");
         cart = [];
-        render();
+        loadCart();
         status.style.color = "green";
-        status.textContent = "✅ Order placed!";
-      } catch(e) {
+        status.textContent = "✅ Order placed successfully!";
+      } catch (err) {
         status.style.color = "red";
-        status.textContent = "❌ Error: " + e.message;
+        status.textContent = "❌ Error: " + err.message;
       }
-    };
+    });
 
-    render();
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        status.style.color = "red";
+        status.textContent = "❌ Please login to access cart.";
+        checkoutBtn.disabled = true;
+      } else {
+        currentUser = user;
+        loadCart();
+      }
+    });
   </script>
 </body>
 </html>
