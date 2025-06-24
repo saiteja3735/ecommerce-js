@@ -3,49 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <title>View Orders - Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="stylesheet" href="style.css">
-
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    h2 { margin-bottom: 10px; }
-    #filters { margin-bottom: 20px; }
-    #filters select, #filters input, #filters button {
-      margin: 5px 10px 5px 0;
-      padding: 5px;
-    }
-    .order {
-      border: 1px solid #ccc;
-      padding: 10px;
-      margin: 10px 0;
-    }
-  </style>
 </head>
 <body>
-  <h2>All Orders</h2>
-  <div id="filters">
-    <label>Quick Filter:</label>
-    <select id="quickFilter">
-      <option value="all">All</option>
-      <option value="today">Today</option>
-      <option value="yesterday">Yesterday</option>
-      <option value="month">This Month</option>
-      <option value="year">This Year</option>
-    </select>
-
-    <label>Custom Range:</label>
-    From <input type="date" id="fromDate">
-    To <input type="date" id="toDate">
-    <button id="applyFilter">Apply</button>
-    <button id="clearFilter">Clear</button>
+  <div class="container">
+    <h2>All Orders</h2>
+    <p id="access" style="color: red;"></p>
+    <div id="orders-list"></div>
   </div>
-
-  <p id="access" style="color: red;"></p>
-  <div id="orders-list"></div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore, collection, getDocs, doc, getDoc, Timestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDaThueFE1Z0nXK_FL3H3gWs-roE8RfxV0",
@@ -62,83 +33,6 @@
 
     const access = document.getElementById("access");
     const ordersList = document.getElementById("orders-list");
-    const quickFilter = document.getElementById("quickFilter");
-    const fromDate = document.getElementById("fromDate");
-    const toDate = document.getElementById("toDate");
-    const applyFilter = document.getElementById("applyFilter");
-    const clearFilter = document.getElementById("clearFilter");
-
-    let allOrders = [];
-
-    function renderOrders(filtered) {
-      ordersList.innerHTML = "";
-      if (filtered.length === 0) {
-        ordersList.innerHTML = "<p>No orders found.</p>";
-        return;
-      }
-      filtered.forEach(order => {
-        const items = order.items.map(item => `<li>${item.name} - ₹${item.price}</li>`).join("");
-        ordersList.innerHTML += `
-          <div class="order">
-            <strong>User:</strong> ${order.user}<br>
-            <strong>Total:</strong> ₹${order.total}<br>
-            <strong>Date:</strong> ${new Date(order.createdAt.seconds * 1000).toLocaleString()}<br>
-            <strong>Items:</strong>
-            <ul>${items}</ul>
-          </div>`;
-      });
-    }
-
-    function filterOrdersByDate(type) {
-      const now = new Date();
-      let start, end;
-
-      if (type === "today") {
-        start = new Date(now.setHours(0, 0, 0, 0));
-        end = new Date(now.setHours(23, 59, 59, 999));
-      } else if (type === "yesterday") {
-        const y = new Date();
-        y.setDate(y.getDate() - 1);
-        start = new Date(y.setHours(0, 0, 0, 0));
-        end = new Date(y.setHours(23, 59, 59, 999));
-      } else if (type === "month") {
-        start = new Date(now.getFullYear(), now.getMonth(), 1);
-        end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-      } else if (type === "year") {
-        start = new Date(now.getFullYear(), 0, 1);
-        end = new Date(now.getFullYear(), 11, 31, 23, 59, 59);
-      } else {
-        renderOrders(allOrders);
-        return;
-      }
-
-      const filtered = allOrders.filter(order => {
-        const orderDate = new Date(order.createdAt.seconds * 1000);
-        return orderDate >= start && orderDate <= end;
-      });
-
-      renderOrders(filtered);
-    }
-
-    function filterCustomRange() {
-      const from = fromDate.value ? new Date(fromDate.value + "T00:00:00") : null;
-      const to = toDate.value ? new Date(toDate.value + "T23:59:59") : null;
-      if (!from || !to) return alert("Select both From and To dates");
-
-      const filtered = allOrders.filter(order => {
-        const orderDate = new Date(order.createdAt.seconds * 1000);
-        return orderDate >= from && orderDate <= to;
-      });
-
-      renderOrders(filtered);
-    }
-
-    function clearAllFilters() {
-      quickFilter.value = "all";
-      fromDate.value = "";
-      toDate.value = "";
-      renderOrders(allOrders);
-    }
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -153,13 +47,23 @@
       }
 
       const snapshot = await getDocs(collection(db, "orders"));
-      allOrders = snapshot.docs.map(doc => doc.data());
-      renderOrders(allOrders);
-    });
+      ordersList.innerHTML = "";
 
-    quickFilter.addEventListener("change", () => filterOrdersByDate(quickFilter.value));
-    applyFilter.addEventListener("click", filterCustomRange);
-    clearFilter.addEventListener("click", clearAllFilters);
+      snapshot.forEach((docSnap) => {
+        const order = docSnap.data();
+        const items = order.items.map(item => `<li>${item.name} - ₹${item.price}</li>`).join("");
+
+        ordersList.innerHTML += `
+          <div class="order">
+            <strong>User:</strong> ${order.user}<br>
+            <strong>Total:</strong> ₹${order.total}<br>
+            <strong>Date:</strong> ${new Date(order.createdAt.seconds * 1000).toLocaleString()}<br>
+            <strong>Items:</strong>
+            <ul>${items}</ul>
+          </div>
+        `;
+      });
+    });
   </script>
 </body>
 </html>

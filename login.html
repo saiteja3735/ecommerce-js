@@ -3,21 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <title>Login - Saiteja's Store</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="stylesheet" href="style.css">
-
+  <style>
+    .form-card {
+      max-width: 400px;
+      margin: 80px auto;
+      padding: 30px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .form-card h2 {
+      margin-bottom: 20px;
+      color: #1e88e5;
+    }
+  </style>
 </head>
 <body>
-  <h2>Login</h2>
-  <form id="login-form">
-    <input type="email" id="email" placeholder="Email" required /><br />
-    <input type="password" id="password" placeholder="Password" required /><br />
-    <button type="submit">Login</button>
-  </form>
+  <div class="form-card">
+    <h2>Login to Your Account</h2>
+    <form id="login-form">
+      <input type="email" id="email" placeholder="Email" required><br>
+      <input type="password" id="password" placeholder="Password" required><br>
+      <button type="submit">Login</button>
+    </form>
+    <p id="login-status" style="color: red;"></p>
+    <p style="margin-top:10px;">Don't have an account? <a href="register.html">Register</a></p>
+  </div>
 
-  <p id="login-status" style="color: red;"></p>
-  <p>Don't have an account? <a href="register.html">Register</a></p>
-
-  <!-- Firebase SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -36,38 +51,23 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    document.getElementById("login-form").addEventListener("submit", async (e) => {
+    const form = document.getElementById("login-form");
+    const status = document.getElementById("login-status");
+
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
-      const status = document.getElementById("login-status");
 
       try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // 🔍 Fetch user role from Firestore
-        const docRef = doc(db, "users", user.uid);
-        const userDoc = await getDoc(docRef);
-
-        if (userDoc.exists()) {
-          const role = userDoc.data().role;
-          status.style.color = "green";
-
-          if (role === "admin") {
-            status.textContent = "✅ Welcome, Admin!";
-            setTimeout(() => {
-              window.location.href = "admin.html";
-            }, 1000);
-          } else {
-            status.textContent = "✅ Login successful!";
-            setTimeout(() => {
-              window.location.href = "products.html";
-            }, 1000);
-          }
+        const userDoc = await getDoc(doc(db, "users", user.uid));
+        if (userDoc.exists() && userDoc.data().role === "admin") {
+          window.location.href = "admin.html";
         } else {
-          status.style.color = "red";
-          status.textContent = "❌ User document not found.";
+          window.location.href = "products.html";
         }
       } catch (err) {
         status.style.color = "red";

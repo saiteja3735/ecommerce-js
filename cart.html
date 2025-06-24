@@ -3,51 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <title>Cart - Saiteja's Store</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="stylesheet" href="style.css">
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-    }
-    h2 {
-      margin-top: 20px;
-      text-align: center;
-    }
-    .cart-container {
-      max-width: 600px;
-      margin: auto;
-      padding: 20px;
-    }
-    .item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-    }
-    .remove-btn {
-      background: red;
-      color: white;
-      border: none;
-      padding: 4px 10px;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    .remove-btn:hover {
-      background: darkred;
-    }
-    #status {
-      text-align: center;
-      color: green;
-      margin-top: 15px;
-    }
-  </style>
 </head>
 <body>
-  <h2>Your Cart</h2>
-  <div class="cart-container">
+  <div class="container cart-container">
+    <h2>Your Cart</h2>
     <div id="cart-items"></div>
     <p><strong>Total:</strong> ₹<span id="total">0</span></p>
     <button id="checkout-btn">Checkout</button>

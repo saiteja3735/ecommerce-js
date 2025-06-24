@@ -1,21 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Register - Saiteja's Store</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .form-card {
+      max-width: 400px;
+      margin: 80px auto;
+      padding: 30px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .form-card h2 {
+      margin-bottom: 20px;
+      color: #1e88e5;
+    }
+  </style>
 </head>
 <body>
-  <h2>Register</h2>
-  <form id="register-form">
-    <input type="text" id="username" placeholder="Username" required><br>
-    <input type="email" id="email" placeholder="Email" required><br>
-    <input type="password" id="password" placeholder="Password" required><br>
-    <button type="submit">Register</button>
-  </form>
-  <p id="register-status" style="color: red;"></p>
-  <p>Already have an account? <a href="login.html">Login</a></p>
+  <div class="form-card">
+    <h2>Create Your Account</h2>
+    <form id="register-form">
+      <input type="text" id="username" placeholder="Username" required><br>
+      <input type="email" id="email" placeholder="Email" required><br>
+      <input type="password" id="password" placeholder="Password" required><br>
+      <button type="submit">Register</button>
+    </form>
+    <p id="register-status" style="color: red;"></p>
+    <p style="margin-top:10px;">Already have an account? <a href="login.html">Login</a></p>
+  </div>
 
-  <!-- ✅ Firebase Modular SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -39,29 +57,24 @@
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const username = document.getElementById("username").value.trim();
-      const email = document.getElementById("email").value.trim();
-      const password = document.getElementById("password").value.trim();
+      const username = document.getElementById("username").value;
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
 
       try {
-        // ✅ Create the user
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // ✅ Save extra info in Firestore
         await setDoc(doc(db, "users", user.uid), {
-          username,
-          email,
+          username: username,
+          email: email,
           role: "user",
           createdAt: new Date().toISOString()
         });
 
-        console.log("✅ User created and stored:", user.uid);
         status.style.color = "green";
-        status.textContent = "✅ Registration successful and saved to database!";
-        form.reset();
+        status.textContent = "✅ Registration successful!";
       } catch (err) {
-        console.error("❌ Registration failed:", err);
         status.style.color = "red";
         status.textContent = "❌ " + err.message;
       }

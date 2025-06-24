@@ -3,24 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <title>View Users - Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="stylesheet" href="style.css">
-
 </head>
 <body>
-  <h2>All Registered Users</h2>
-  <p id="access" style="color: red;"></p>
-  <div id="users-list"></div>
+  <div class="container">
+    <h2>All Registered Users</h2>
+    <p id="access" style="color: red;"></p>
+    <div id="user-list"></div>
+  </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import {
-      getFirestore,
-      collection,
-      getDocs,
-      doc,
-      getDoc
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDaThueFE1Z0nXK_FL3H3gWs-roE8RfxV0",
@@ -36,7 +32,7 @@
     const db = getFirestore(app);
 
     const access = document.getElementById("access");
-    const usersList = document.getElementById("users-list");
+    const userList = document.getElementById("user-list");
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -50,17 +46,17 @@
         return;
       }
 
-      // Load all users from Firestore
-      const querySnapshot = await getDocs(collection(db, "users"));
-      usersList.innerHTML = "";
+      const snapshot = await getDocs(collection(db, "users"));
+      userList.innerHTML = "";
 
-      querySnapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        usersList.innerHTML += `
-          <div style="border:1px solid #ccc; padding:10px; margin:10px;">
-            <strong>${data.username}</strong><br>
-            Email: ${data.email}<br>
-            Role: ${data.role}
+      snapshot.forEach((docSnap) => {
+        const u = docSnap.data();
+        userList.innerHTML += `
+          <div class="order">
+            <strong>Username:</strong> ${u.username}<br>
+            <strong>Email:</strong> ${u.email}<br>
+            <strong>Role:</strong> ${u.role}<br>
+            <strong>Joined:</strong> ${new Date(u.createdAt).toLocaleString()}
           </div>
         `;
       });

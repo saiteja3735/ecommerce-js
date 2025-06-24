@@ -1,26 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Add Product - Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="stylesheet" href="style.css">
-
+  <style>
+    .form-card {
+      max-width: 500px;
+      margin: 60px auto;
+      padding: 30px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.1);
+    }
+    .form-card h2 {
+      margin-bottom: 20px;
+      text-align: center;
+      color: #1e88e5;
+    }
+  </style>
 </head>
 <body>
-  <h2>Add Product</h2>
-  <form id="product-form">
-    <input type="text" id="name" placeholder="Product Name" required><br>
-    <input type="number" id="price" placeholder="Price" required><br>
-    <textarea id="desc" placeholder="Description" required></textarea><br>
-    <input type="text" id="image" placeholder="Image URL" required><br>
-    <button type="submit">Add Product</button>
-  </form>
-  <p id="status"></p>
+  <div class="form-card">
+    <h2>Add New Product</h2>
+    <form id="product-form">
+      <input type="text" id="name" placeholder="Product Name" required><br>
+      <input type="number" id="price" placeholder="Price (₹)" required><br>
+      <input type="text" id="desc" placeholder="Description" required><br>
+      <input type="text" id="image" placeholder="Image URL" required><br>
+      <button type="submit">Add Product</button>
+    </form>
+    <p id="status" style="margin-top:10px;"></p>
+  </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore, collection, addDoc, serverTimestamp, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDaThueFE1Z0nXK_FL3H3gWs-roE8RfxV0",
@@ -32,26 +48,10 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
     const db = getFirestore(app);
 
     const form = document.getElementById("product-form");
     const status = document.getElementById("status");
-
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        status.textContent = "❌ You must be logged in.";
-        form.style.display = "none";
-        return;
-      }
-
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      if (!userDoc.exists() || userDoc.data().role !== "admin") {
-        status.textContent = "❌ Access denied. You are not an admin.";
-        form.style.display = "none";
-        return;
-      }
-    });
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -62,12 +62,16 @@
 
       try {
         await addDoc(collection(db, "products"), {
-          name, price, desc, image,
+          name,
+          price,
+          desc,
+          image,
           createdAt: serverTimestamp()
         });
+
+        form.reset();
         status.style.color = "green";
         status.textContent = "✅ Product added successfully!";
-        form.reset();
       } catch (err) {
         status.style.color = "red";
         status.textContent = "❌ " + err.message;

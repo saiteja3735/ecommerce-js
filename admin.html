@@ -3,53 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <title>Admin Dashboard - Saiteja's Store</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="stylesheet" href="style.css">
-
 </head>
 <body>
-  <h2>Admin Dashboard</h2>
-  <p id="access" style="color: red;"></p>
+  <div class="container">
+    <h2>Admin Dashboard</h2>
+    <p>Welcome, Admin! Choose an action below:</p>
 
-  <!-- Admin Operation Buttons -->
-  <button onclick="window.location.href='add-product.html'">➕ Add Product</button><br><br>
-  <button onclick="window.location.href='view-users.html'">👥 View All Users</button><br><br>
-  <button onclick="window.location.href='view-orders.html'">📦 View All Orders</button><br><br>
-
-  <!-- Firebase SDK -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyDaThueFE1Z0nXK_FL3H3gWs-roE8RfxV0",
-      authDomain: "ecommercest-f71db.firebaseapp.com",
-      projectId: "ecommercest-f71db",
-      storageBucket: "ecommercest-f71db.firebasestorage.app",
-      messagingSenderId: "1053281704673",
-      appId: "1:1053281704673:web:b59b1b83c1e3a850cab5a0"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const access = document.getElementById("access");
-
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        access.textContent = "❌ You are not logged in.";
-        return;
-      }
-
-      const docSnap = await getDoc(doc(db, "users", user.uid));
-      const data = docSnap.data();
-      if (!data || data.role !== "admin") {
-        access.textContent = "❌ Access denied. You are not an admin.";
-        document.querySelectorAll("button").forEach(btn => btn.style.display = "none");
-      } else {
-        access.textContent = "";
-      }
-    });
-  </script>
+    <div class="admin-options">
+      <button onclick="location.href='add-product.html'" class="btn">➕ Add Product</button>
+      <button onclick="location.href='view-orders.html'" class="btn">📦 View Orders</button>
+      <button onclick="location.href='view-users.html'" class="btn">👥 View Users</button>
+      <button onclick="location.href='index.html'" class="btn">🔚 Logout</button>
+    </div>
+  </div>
 </body>
 </html>
