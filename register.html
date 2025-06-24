@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Register - Saiteja's Store</title>
+</head>
+<body>
+  <h2>Register</h2>
+  <form id="register-form">
+    <input type="text" id="username" placeholder="Username" required /><br />
+    <input type="email" id="email" placeholder="Email" required /><br />
+    <input type="password" id="password" placeholder="Password" required /><br />
+    <button type="submit">Register</button>
+  </form>
+
+  <p id="register-status" style="color: green;"></p>
+  <p>Already have an account? <a href="login.html">Login</a></p>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDaThueFE1Z0nXK_FL3H3gWs-roE8RfxV0",
+      authDomain: "ecommercest-f71db.firebaseapp.com",
+      projectId: "ecommercest-f71db",
+      storageBucket: "ecommercest-f71db.firebasestorage.app",
+      messagingSenderId: "1053281704673",
+      appId: "1:1053281704673:web:b59b1b83c1e3a850cab5a0"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    document.getElementById("register-form").addEventListener("submit", function (e) {
+      e.preventDefault();
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      auth.createUserWithEmailAndPassword(email, password)
+        .then(userCredential => {
+          document.getElementById("register-status").textContent = "Registration successful!";
+        })
+        .catch(error => {
+          document.getElementById("register-status").textContent = error.message;
+        });
+    });
+  </script>
+</body>
+</html>
