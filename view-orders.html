@@ -5,11 +5,39 @@
   <title>View Orders - Admin</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <link rel="stylesheet" href="style.css">
+  <style>
+    .filter-box {
+      margin-bottom: 20px;
+    }
+    .filter-box select,
+    .filter-box input {
+      padding: 6px 10px;
+      margin-right: 10px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
     <h2>All Orders</h2>
     <p id="access" style="color: red;"></p>
+
+    <div class="filter-box">
+      <label><strong>Filter:</strong></label>
+      <select id="filter-type">
+        <option value="all">All Orders</option>
+        <option value="today">Today</option>
+        <option value="yesterday">Yesterday</option>
+        <option value="last7">Last 7 Days</option>
+        <option value="last30">Last 30 Days</option>
+        <option value="range">Select Date Range</option>
+      </select>
+      <input type="date" id="from-date" style="display: none;">
+      <input type="date" id="to-date" style="display: none;">
+      <button onclick="loadOrders()">Apply</button>
+    </div>
+
     <div id="orders-list"></div>
   </div>
 
@@ -34,6 +62,71 @@
     const access = document.getElementById("access");
     const ordersList = document.getElementById("orders-list");
 
+    let allOrders = [];
+
+    function getStartOfDay(date) {
+      return new Date(date.setHours(0, 0, 0, 0));
+    }
+
+    function getEndOfDay(date) {
+      return new Date(date.setHours(23, 59, 59, 999));
+    }
+
+    function filterOrders(orders, type, from = null, to = null) {
+      const now = new Date();
+      const today = getStartOfDay(new Date());
+      const yesterday = getStartOfDay(new Date(Date.now() - 86400000));
+      const weekAgo = new Date(Date.now() - 7 * 86400000);
+      const monthAgo = new Date(Date.now() - 30 * 86400000);
+
+      return orders.filter(order => {
+        const orderDate = new Date(order.createdAt.seconds * 1000);
+
+        if (type === "today") {
+          return orderDate >= today;
+        } else if (type === "yesterday") {
+          return orderDate >= yesterday && orderDate < today;
+        } else if (type === "last7") {
+          return orderDate >= weekAgo;
+        } else if (type === "last30") {
+          return orderDate >= monthAgo;
+        } else if (type === "range" && from && to) {
+          return orderDate >= new Date(from) && orderDate <= getEndOfDay(new Date(to));
+        } else {
+          return true;
+        }
+      });
+    }
+
+    function displayOrders(orders) {
+      ordersList.innerHTML = "";
+      if (orders.length === 0) {
+        ordersList.innerHTML = "<p>No orders found for the selected range.</p>";
+        return;
+      }
+
+      orders.forEach(order => {
+        const items = order.items.map(item => `<li>${item.name} - ₹${item.price}</li>`).join("");
+        ordersList.innerHTML += `
+          <div class="order">
+            <strong>User:</strong> ${order.user}<br>
+            <strong>Total:</strong> ₹${order.total}<br>
+            <strong>Date:</strong> ${new Date(order.createdAt.seconds * 1000).toLocaleString()}<br>
+            <strong>Items:</strong>
+            <ul>${items}</ul>
+          </div>
+        `;
+      });
+    }
+
+    async function loadOrders() {
+      const filter = document.getElementById("filter-type").value;
+      const from = document.getElementById("from-date").value;
+      const to = document.getElementById("to-date").value;
+      const filtered = filterOrders(allOrders, filter, from, to);
+      displayOrders(filtered);
+    }
+
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
         access.textContent = "❌ You are not logged in.";
@@ -47,22 +140,14 @@
       }
 
       const snapshot = await getDocs(collection(db, "orders"));
-      ordersList.innerHTML = "";
+      allOrders = snapshot.docs.map(doc => doc.data());
+      loadOrders();
+    });
 
-      snapshot.forEach((docSnap) => {
-        const order = docSnap.data();
-        const items = order.items.map(item => `<li>${item.name} - ₹${item.price}</li>`).join("");
-
-        ordersList.innerHTML += `
-          <div class="order">
-            <strong>User:</strong> ${order.user}<br>
-            <strong>Total:</strong> ₹${order.total}<br>
-            <strong>Date:</strong> ${new Date(order.createdAt.seconds * 1000).toLocaleString()}<br>
-            <strong>Items:</strong>
-            <ul>${items}</ul>
-          </div>
-        `;
-      });
+    document.getElementById("filter-type").addEventListener("change", () => {
+      const showRange = document.getElementById("filter-type").value === "range";
+      document.getElementById("from-date").style.display = showRange ? "inline-block" : "none";
+      document.getElementById("to-date").style.display = showRange ? "inline-block" : "none";
     });
   </script>
 </body>
