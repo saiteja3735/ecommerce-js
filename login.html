@@ -19,6 +19,7 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDaThueFE1Z0nXK_FL3H3gWs-roE8RfxV0",
@@ -31,6 +32,7 @@
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const db = getFirestore(app);
 
     document.getElementById("login-form").addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -40,13 +42,31 @@
 
       try {
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        status.style.color = "green";
-        status.textContent = "✅ Login successful!";
-        
-        // ✅ Redirect after a short delay
-        setTimeout(() => {
-          window.location.href = "products.html";
-        }, 1000);
+        const user = userCredential.user;
+
+        // 🔍 Fetch user role from Firestore
+        const docRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(docRef);
+
+        if (userDoc.exists()) {
+          const role = userDoc.data().role;
+          status.style.color = "green";
+
+          if (role === "admin") {
+            status.textContent = "✅ Welcome, Admin!";
+            setTimeout(() => {
+              window.location.href = "admin.html";
+            }, 1000);
+          } else {
+            status.textContent = "✅ Login successful!";
+            setTimeout(() => {
+              window.location.href = "products.html";
+            }, 1000);
+          }
+        } else {
+          status.style.color = "red";
+          status.textContent = "❌ User document not found.";
+        }
       } catch (err) {
         status.style.color = "red";
         status.textContent = "❌ " + err.message;
