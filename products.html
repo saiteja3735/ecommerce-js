@@ -3,15 +3,47 @@
 <head>
   <meta charset="UTF-8">
   <title>Products - Saiteja's Store</title>
+  <style>
+    .top-bar {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 10px;
+      background-color: #f0f0f0;
+    }
+
+    .top-bar button {
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+
+    .product {
+      margin: 10px 0;
+      padding: 10px;
+      border: 1px solid #ccc;
+    }
+  </style>
 </head>
 <body>
+  <!-- ✅ Top bar with Cart and Logout -->
+  <div class="top-bar">
+    <button onclick="window.location.href='cart.html'">🛒 Cart</button>
+    <button id="logout-btn">🔓 Logout</button>
+  </div>
+
   <h2>Product List</h2>
   <div id="product-list"></div>
+  <p id="status"></p>
 
-  <!-- Firebase v10 Modular CDN -->
+  <!-- Firebase SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      getDocs
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDaThueFE1Z0nXK_FL3H3gWs-roE8RfxV0",
@@ -23,35 +55,60 @@
     };
 
     const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
     const db = getFirestore(app);
 
     const productList = document.getElementById("product-list");
+    const status = document.getElementById("status");
 
+    let cart = JSON.parse(localStorage.getItem("cart")) || [];
+
+    // 🔐 Check auth
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        window.location.href = "login.html";
+      }
+    });
+
+    // 🔘 Logout button
+    document.getElementById("logout-btn").addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        localStorage.removeItem("cart");
+        window.location.href = "index.html";
+      } catch (err) {
+        alert("Logout failed: " + err.message);
+      }
+    });
+
+    // 📦 Load products from Firestore
     async function loadProducts() {
       const snapshot = await getDocs(collection(db, "products"));
+      productList.innerHTML = "";
+
       snapshot.forEach(doc => {
-        const p = doc.data();
-        const card = `
-          <div style="border:1px solid #ccc; padding:10px; margin:10px; max-width:300px;">
-            <h3>${p.name}</h3>
-            <p>${p.desc}</p>
-            <p><strong>₹${p.price}</strong></p>
-            <img src="${p.image}" width="150" alt="${p.name}"><br>
-            <button onclick="addToCart('${doc.id}', '${p.name}', ${p.price})">Add to Cart</button>
+        const product = doc.data();
+        productList.innerHTML += `
+          <div class="product">
+            <strong>${product.name}</strong><br>
+            ₹${product.price}<br>
+            ${product.desc}<br>
+            <img src="${product.image}" alt="${product.name}" width="100"><br>
+            <button onclick='addToCart(${JSON.stringify(product)})'>Add to Cart</button>
           </div>
         `;
-        productList.innerHTML += card;
       });
     }
 
-    loadProducts();
-
-    window.addToCart = function(id, name, price) {
-      const cart = JSON.parse(localStorage.getItem("cart") || "[]");
-      cart.push({ id, name, price });
+    // ➕ Add to cart
+    function addToCart(product) {
+      cart.push(product);
       localStorage.setItem("cart", JSON.stringify(cart));
-      alert(`${name} added to cart!`);
-    };
+      status.style.color = "green";
+      status.textContent = `✅ ${product.name} added to cart!`;
+    }
+
+    loadProducts();
   </script>
 </body>
 </html>
