@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>View Orders - Admin</title>
+</head>
+<body>
+  <h2>All Orders</h2>
+  <p id="access" style="color: red;"></p>
+  <div id="orders-list"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      doc,
+      getDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDaThueFE1Z0nXK_FL3H3gWs-roE8RfxV0",
+      authDomain: "ecommercest-f71db.firebaseapp.com",
+      projectId: "ecommercest-f71db",
+      storageBucket: "ecommercest-f71db.firebasestorage.app",
+      messagingSenderId: "1053281704673",
+      appId: "1:1053281704673:web:b59b1b83c1e3a850cab5a0"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const access = document.getElementById("access");
+    const ordersList = document.getElementById("orders-list");
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        access.textContent = "❌ You are not logged in.";
+        return;
+      }
+
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      if (!userDoc.exists() || userDoc.data().role !== "admin") {
+        access.textContent = "❌ Access denied. You are not an admin.";
+        return;
+      }
+
+      // ✅ Fetch and display orders
+      const snapshot = await getDocs(collection(db, "orders"));
+      ordersList.innerHTML = "";
+
+      snapshot.forEach((docSnap) => {
+        const order = docSnap.data();
+        const items = order.items.map(item =>
+          `<li>${item.name} - ₹${item.price}</li>`
+        ).join("");
+
+        ordersList.innerHTML += `
+          <div style="border:1px solid #ccc; padding:10px; margin:10px;">
+            <strong>User:</strong> ${order.user}<br>
+            <strong>Total:</strong> ₹${order.total}<br>
+            <strong>Items:</strong>
+            <ul>${items}</ul>
+          </div>
+        `;
+      });
+    });
+  </script>
+</body>
+</html>
