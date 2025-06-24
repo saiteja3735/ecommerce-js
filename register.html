@@ -15,7 +15,7 @@
   <p id="register-status" style="color: red;"></p>
   <p>Already have an account? <a href="login.html">Login</a></p>
 
-  <!-- Firebase SDKs -->
+  <!-- ✅ Firebase Modular SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -39,25 +39,29 @@
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const username = document.getElementById("username").value;
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
+      const username = document.getElementById("username").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
 
       try {
+        // ✅ Create the user
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
 
-        // ✅ Save extra user info to Firestore
+        // ✅ Save extra info in Firestore
         await setDoc(doc(db, "users", user.uid), {
-          username: username,
-          email: email,
-          role: "user", // default role
+          username,
+          email,
+          role: "user",
           createdAt: new Date().toISOString()
         });
 
+        console.log("✅ User created and stored:", user.uid);
         status.style.color = "green";
         status.textContent = "✅ Registration successful and saved to database!";
+        form.reset();
       } catch (err) {
+        console.error("❌ Registration failed:", err);
         status.style.color = "red";
         status.textContent = "❌ " + err.message;
       }
