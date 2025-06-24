@@ -5,17 +5,57 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Welcome - Saiteja's Store</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    .welcome-card {
+      max-width: 500px;
+      background: #ffffff;
+      padding: 30px;
+      margin-top: 100px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
 
+    .welcome-card h1 {
+      margin-bottom: 20px;
+      color: #1e88e5;
+    }
+
+    .welcome-card p {
+      margin-bottom: 30px;
+      font-size: 16px;
+    }
+
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      background-color: #1e88e5;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 16px;
+      transition: background 0.3s ease;
+    }
+
+    .nav-links a:hover {
+      background-color: #1565c0;
+    }
+  </style>
 </head>
 <body>
-  <h1>Welcome to Saiteja's E-Commerce Store</h1>
+  <div class="welcome-card">
+    <h1>Welcome to Saiteja's E-Commerce Store</h1>
+    <p>Start shopping by registering or logging into your account.</p>
 
-  <nav style="margin: 20px 0;">
-    <a href="register.html">📝 Register</a> |
-    <a href="login.html">🔐 Login</a> |
-    <a href="admin.html">👨‍💼 Admin Login</a>
-  </nav>
-
-  <p>This is a secure portal for customers and administrators.</p>
+    <div class="nav-links">
+      <a href="register.html">📝 Register</a>
+      <a href="login.html">🔐 Login</a>
+    </div>
+  </div>
 </body>
 </html>
