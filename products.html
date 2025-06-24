@@ -47,15 +47,22 @@
       padding: 20px;
     }
     .product {
-      width: 200px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 500px;
       border: 1px solid #ccc;
-      padding: 10px;
+      padding: 15px;
       border-radius: 4px;
-      text-align: center;
+      background: #fafafa;
+    }
+    .product-info {
+      max-width: 60%;
     }
     .product img {
-      width: 100%;
+      width: 120px;
       height: auto;
+      object-fit: contain;
     }
     .add-btn {
       margin-top: 10px;
@@ -113,7 +120,7 @@
       projectId: "ecommercest-f71db",
       storageBucket: "ecommercest-f71db.firebasestorage.app",
       messagingSenderId: "1053281704673",
-      appId: "1:1053281704673:web:b59b1b83c1e850cab5a0"
+      appId: "1:1053281704673:web:b59b1b83c1e3a850cab5a0"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -163,11 +170,13 @@
         const div = document.createElement("div");
         div.className = "product";
         div.innerHTML = `
-          <img src="${p.image}" alt="${p.name}" onerror="this.src='https://via.placeholder.com/200'">
-          <h3>${p.name}</h3>
-          <p>₹${p.price}</p>
-          <p>${p.desc}</p>
-          <button class="add-btn">Add to Cart</button>
+          <div class="product-info">
+            <h3>${p.name}</h3>
+            <p>₹${p.price}</p>
+            <p>${p.desc}</p>
+            <button class="add-btn">Add to Cart</button>
+          </div>
+          <img src="${p.image}" alt="${p.name}" onerror="this.src='https://via.placeholder.com/120'">
         `;
         div.querySelector(".add-btn").onclick = () => {
           cart.push(p);
