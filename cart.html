@@ -1,113 +1,112 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Cart - Saiteja's Store</title>
+  <style>
+    .item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #ddd;
+    }
+    .remove-btn {
+      background: transparent;
+      color: red;
+      border: none;
+      cursor: pointer;
+    }
+    #empty { font-style: italic; }
+  </style>
 </head>
 <body>
   <h2>Your Cart</h2>
   <div id="cart-items"></div>
-  <p><strong>Total:</strong> ₹<span id="total">0</span></p>
+  <p id="empty"></p>
+  <p><strong>Total: ₹<span id="total">0</span></strong></p>
   <button id="checkout-btn">Checkout</button>
   <p id="status"></p>
 
-  <!-- Firebase SDKs -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDaThueFE1Z0nXK_FL3H3gWs-roE8RfxV0",
-      authDomain: "ecommercest-f71db.firebaseapp.com",
-      projectId: "ecommercest-f71db",
-      storageBucket: "ecommercest-f71db.firebasestorage.app",
-      messagingSenderId: "1053281704673",
-      appId: "1:1053281704673:web:b59b1b83c1e3a850cab5a0"
-    };
-
+    const firebaseConfig = { /* your config */ };
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    const cartItemsContainer = document.getElementById("cart-items");
-    const totalDisplay = document.getElementById("total");
-    const checkoutBtn = document.getElementById("checkout-btn");
+    const itemsDiv = document.getElementById("cart-items");
+    const emptyMsg = document.getElementById("empty");
+    const totalEl = document.getElementById("total");
     const status = document.getElementById("status");
+    const checkoutBtn = document.getElementById("checkout-btn");
 
     let cart = JSON.parse(localStorage.getItem("cart")) || [];
-    let currentUser = null;
+    let user;
 
-    // Render cart items
-    function renderCart() {
-      cartItemsContainer.innerHTML = "";
-      let total = 0;
-
+    function render() {
+      itemsDiv.innerHTML = "";
       if (cart.length === 0) {
-        cartItemsContainer.innerHTML = "<p>Your cart is empty.</p>";
+        emptyMsg.textContent = "Your cart is empty.";
         checkoutBtn.disabled = true;
+        totalEl.textContent = 0;
         return;
       }
-
-      cart.forEach(item => {
-        total += item.price;
-        cartItemsContainer.innerHTML += `
-          <div style="margin-bottom:10px;">
-            <strong>${item.name}</strong> - ₹${item.price}
-          </div>
-        `;
-      });
-
-      totalDisplay.textContent = total;
+      emptyMsg.textContent = "";
       checkoutBtn.disabled = false;
+      let total = 0;
+      cart.forEach((p,i) => {
+        total += p.price;
+        itemsDiv.innerHTML += `
+          <div class="item">
+            <span>${p.name} - ₹${p.price}</span> 
+            <button class="remove-btn" onclick="remove(${i})">✖️</button>
+          </div>`;
+      });
+      totalEl.textContent = total;
     }
 
-    // Monitor auth state
-    onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        status.textContent = "❌ You must be logged in to checkout.";
+    window.remove = i => {
+      cart.splice(i, 1);
+      localStorage.setItem("cart", JSON.stringify(cart));
+      render();
+    };
+
+    onAuthStateChanged(auth, u => {
+      if (!u) {
+        status.textContent = "🔒 Please log in to checkout.";
         checkoutBtn.disabled = true;
       } else {
-        currentUser = user;
+        user = u;
         status.textContent = "";
-        renderCart();
+        render();
       }
     });
 
-    // Checkout handler
-    checkoutBtn.addEventListener("click", async () => {
-      if (!currentUser) {
-        status.textContent = "❌ Please log in first.";
-        return;
-      }
-
-      if (cart.length === 0) {
-        status.textContent = "❌ Your cart is empty.";
-        return;
-      }
-
-      const totalAmount = cart.reduce((sum, item) => sum + item.price, 0);
-
+    checkoutBtn.onclick = async () => {
+      if (!user || cart.length === 0) return;
+      const total = cart.reduce((sum, p) => sum + p.price,0);
       try {
         await addDoc(collection(db, "orders"), {
-          user: currentUser.email,
+          user: user.email,
           items: cart,
-          total: totalAmount,
+          total,
           createdAt: serverTimestamp()
         });
-
         localStorage.removeItem("cart");
         cart = [];
-        renderCart();
+        render();
         status.style.color = "green";
-        status.textContent = "✅ Order placed successfully!";
-      } catch (err) {
+        status.textContent = "✅ Order placed!";
+      } catch(e) {
         status.style.color = "red";
-        status.textContent = "❌ Failed to place order: " + err.message;
+        status.textContent = "❌ Error: " + e.message;
       }
-    });
+    };
 
-    renderCart();
+    render();
   </script>
 </body>
 </html>
