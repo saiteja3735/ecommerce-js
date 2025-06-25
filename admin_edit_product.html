@@ -2,118 +2,111 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Edit Product - Lakshmi Dairy</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edit Products - Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="stylesheet" href="style.css">
   <style>
-    body {
-      font-family: sans-serif;
-      background: #fef6f6;
-      padding: 20px;
-    }
-    h2 {
-      text-align: center;
-      color: #2c3e50;
-    }
-    .product-list {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 20px;
-    }
-    .product-card {
+    .product-editor {
       background: #fff;
-      padding: 15px;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      margin: 20px auto;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+      max-width: 600px;
     }
-    input {
+    .product-editor h3 {
+      margin-top: 0;
+      color: #1e88e5;
+    }
+    .product-editor input {
       width: 100%;
-      padding: 8px;
+      padding: 10px;
       margin: 8px 0;
-      border-radius: 6px;
+      border-radius: 5px;
       border: 1px solid #ccc;
     }
-    button {
-      background-color: #3498db;
+    .product-editor button {
+      background-color: #28a745;
       color: white;
-      padding: 10px;
-      width: 100%;
+      padding: 10px 20px;
       border: none;
-      border-radius: 6px;
+      margin-top: 10px;
+      border-radius: 5px;
       cursor: pointer;
+      font-weight: bold;
+    }
+    .product-editor button:hover {
+      background-color: #218838;
     }
   </style>
 </head>
 <body>
+  <div class="container">
+    <h2>📝 Edit Products</h2>
+    <div id="product-list"></div>
+  </div>
 
-  <h2>📝 Edit Products</h2>
-  <div class="product-list" id="productList"></div>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      doc,
+      updateDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  <script>
-    const api = "https://lakshmi-dairy-backend.onrender.com";
+    const firebaseConfig = {
+      apiKey: "AIzaSyDaThueFE1Z0nXK_FL3H3gWs-roE8RfxV0",
+      authDomain: "ecommercest-f71db.firebaseapp.com",
+      projectId: "ecommercest-f71db",
+      storageBucket: "ecommercest-f71db.firebasestorage.app",
+      messagingSenderId: "1053281704673",
+      appId: "1:1053281704673:web:b59b1b83c1e3a850cab5a0"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const list = document.getElementById("product-list");
 
     async function loadProducts() {
-      try {
-        const res = await fetch(`${api}/products`);
-        if (!res.ok) throw new Error(`Status: ${res.status}`);
-        const products = await res.json();
-        if (!Array.isArray(products)) throw new Error("Invalid data format");
-        display(products);
-      } catch (err) {
-        console.error("❌ Error loading products:", err);
-        alert("❌ Could not load products. Check console for details.");
-      }
-    }
-
-    function display(products) {
-      const list = document.getElementById("productList");
+      const snapshot = await getDocs(collection(db, "products"));
       list.innerHTML = "";
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        const id = docSnap.id;
 
-      if (products.length === 0) {
-        list.innerHTML = "<p style='text-align:center;'>No products available.</p>";
-        return;
-      }
-
-      products.forEach(p => {
-        const card = document.createElement("div");
-        card.className = "product-card";
-        card.innerHTML = `
-          <h3>${p.name}</h3>
-          <input type="text" value="${p.name}" id="name-${p.id}" placeholder="Name" />
-          <input type="number" value="${p.price}" id="price-${p.id}" placeholder="Price" />
-          <input type="text" value="${p.unit}" id="unit-${p.id}" placeholder="Unit" />
-          <button onclick="update(${p.id})">Update</button>
+        const div = document.createElement("div");
+        div.className = "product-editor";
+        div.innerHTML = `
+          <h3>${data.name}</h3>
+          <input type="text" id="name-${id}" value="${data.name}" placeholder="Product Name" />
+          <input type="number" id="price-${id}" value="${data.price}" placeholder="Price ₹" />
+          <input type="text" id="desc-${id}" value="${data.desc}" placeholder="Description" />
+          <input type="text" id="image-${id}" value="${data.image}" placeholder="Image URL" />
+          <button onclick="editProduct('${id}')">Update Product</button>
         `;
-        list.appendChild(card);
+        list.appendChild(div);
       });
     }
 
-    async function update(id) {
-      const name = document.getElementById(`name-${id}`).value.trim();
+    window.editProduct = async (id) => {
+      const name = document.getElementById(`name-${id}`).value;
       const price = parseFloat(document.getElementById(`price-${id}`).value);
-      const unit = document.getElementById(`unit-${id}`).value.trim();
-
-      if (!name || isNaN(price) || !unit) {
-        alert("❌ Please enter valid name, price, and unit.");
-        return;
-      }
+      const desc = document.getElementById(`desc-${id}`).value;
+      const image = document.getElementById(`image-${id}`).value;
 
       try {
-        const res = await fetch(`${api}/edit-product/${id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, price, unit }),
+        await updateDoc(doc(db, "products", id), {
+          name, price, desc, image
         });
-        const data = await res.json();
-        alert(data.message || "✅ Product updated!");
-        loadProducts();
+        alert("✅ Product updated successfully!");
       } catch (err) {
-        console.error("❌ Update failed:", err);
-        alert("❌ Failed to update product.");
+        alert("❌ Error: " + err.message);
       }
-    }
+    };
 
     loadProducts();
   </script>
-
 </body>
 </html>
