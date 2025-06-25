@@ -25,7 +25,7 @@
       border-radius: 12px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
-    input, select {
+    input {
       width: 100%;
       padding: 8px;
       margin: 8px 0;
@@ -54,16 +54,25 @@
     async function loadProducts() {
       try {
         const res = await fetch(`${api}/products`);
+        if (!res.ok) throw new Error(`Status: ${res.status}`);
         const products = await res.json();
+        if (!Array.isArray(products)) throw new Error("Invalid data format");
         display(products);
-      } catch {
-        alert("❌ Could not load products.");
+      } catch (err) {
+        console.error("❌ Error loading products:", err);
+        alert("❌ Could not load products. Check console for details.");
       }
     }
 
     function display(products) {
       const list = document.getElementById("productList");
       list.innerHTML = "";
+
+      if (products.length === 0) {
+        list.innerHTML = "<p style='text-align:center;'>No products available.</p>";
+        return;
+      }
+
       products.forEach(p => {
         const card = document.createElement("div");
         card.className = "product-card";
@@ -79,9 +88,14 @@
     }
 
     async function update(id) {
-      const name = document.getElementById(`name-${id}`).value;
-      const price = document.getElementById(`price-${id}`).value;
-      const unit = document.getElementById(`unit-${id}`).value;
+      const name = document.getElementById(`name-${id}`).value.trim();
+      const price = parseFloat(document.getElementById(`price-${id}`).value);
+      const unit = document.getElementById(`unit-${id}`).value.trim();
+
+      if (!name || isNaN(price) || !unit) {
+        alert("❌ Please enter valid name, price, and unit.");
+        return;
+      }
 
       try {
         const res = await fetch(`${api}/edit-product/${id}`, {
@@ -90,10 +104,11 @@
           body: JSON.stringify({ name, price, unit }),
         });
         const data = await res.json();
-        alert(data.message);
+        alert(data.message || "✅ Product updated!");
         loadProducts();
-      } catch {
-        alert("❌ Update failed.");
+      } catch (err) {
+        console.error("❌ Update failed:", err);
+        alert("❌ Failed to update product.");
       }
     }
 
