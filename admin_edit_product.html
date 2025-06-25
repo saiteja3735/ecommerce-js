@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Edit Product - Lakshmi Dairy</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #fef6f6;
+      padding: 20px;
+    }
+    h2 {
+      text-align: center;
+      color: #2c3e50;
+    }
+    .product-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .product-card {
+      background: #fff;
+      padding: 15px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin: 8px 0;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #3498db;
+      color: white;
+      padding: 10px;
+      width: 100%;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>📝 Edit Products</h2>
+  <div class="product-list" id="productList"></div>
+
+  <script>
+    const api = "https://lakshmi-dairy-backend.onrender.com";
+
+    async function loadProducts() {
+      try {
+        const res = await fetch(`${api}/products`);
+        const products = await res.json();
+        display(products);
+      } catch {
+        alert("❌ Could not load products.");
+      }
+    }
+
+    function display(products) {
+      const list = document.getElementById("productList");
+      list.innerHTML = "";
+      products.forEach(p => {
+        const card = document.createElement("div");
+        card.className = "product-card";
+        card.innerHTML = `
+          <h3>${p.name}</h3>
+          <input type="text" value="${p.name}" id="name-${p.id}" placeholder="Name" />
+          <input type="number" value="${p.price}" id="price-${p.id}" placeholder="Price" />
+          <input type="text" value="${p.unit}" id="unit-${p.id}" placeholder="Unit" />
+          <button onclick="update(${p.id})">Update</button>
+        `;
+        list.appendChild(card);
+      });
+    }
+
+    async function update(id) {
+      const name = document.getElementById(`name-${id}`).value;
+      const price = document.getElementById(`price-${id}`).value;
+      const unit = document.getElementById(`unit-${id}`).value;
+
+      try {
+        const res = await fetch(`${api}/edit-product/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, price, unit }),
+        });
+        const data = await res.json();
+        alert(data.message);
+        loadProducts();
+      } catch {
+        alert("❌ Update failed.");
+      }
+    }
+
+    loadProducts();
+  </script>
+
+</body>
+</html>
